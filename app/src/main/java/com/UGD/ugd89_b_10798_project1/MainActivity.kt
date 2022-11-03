@@ -1,20 +1,36 @@
 package com.UGD.ugd89_b_10798_project1
 
 import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import com.UGD.ugd89_b_10798_project1.databinding.ActivityMainBinding
 
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
+
+    private var binding: ActivityMainBinding? = null
+    private val CHANNEL_ID_1 = "channel_notification_01"
+    private val CHANNEL_ID_2 = "channel_notification_02"
+    private val notificationId1 = 101
+    private val notificationId2 = 102
+
     private var lastUpdate: Long = 0
     private var last_x = 0f
     private var last_y = 0f
@@ -27,7 +43,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         checkPermission(Manifest.permission.CAMERA, CAMERA_PERMISSION_CODE)
         mSensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         mAccelerometers = mSensorManager!!.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        createNotificationChannel()
     }
+
 
     // Function to check and request permission.
     fun checkPermission(permission: String, requestCode: Int) {
@@ -82,6 +100,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 last_x = x
                 last_y = y
                 last_z = z
+                sendNotification1()
             }
         }
     }
@@ -100,5 +119,53 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     companion object {
         private const val SHAKE_THRESHOLD = 600
         private const val CAMERA_PERMISSION_CODE = 100
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "Notification Tittle"
+            val descriptionText = "Notification Description"
+
+            val channel1 = NotificationChannel(CHANNEL_ID_1, name, NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = descriptionText
+            }
+
+            val channel2 = NotificationChannel(CHANNEL_ID_2, name, NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = descriptionText
+            }
+
+            val notificationManager: NotificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel1)
+            notificationManager.createNotificationChannel(channel2)
+        }
+    }
+
+    private fun sendNotification1() {
+
+        val intent : Intent = Intent(this,MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent : PendingIntent = PendingIntent.getActivity(this, 0,intent, PendingIntent.FLAG_MUTABLE)
+
+        val broadcastIntent : Intent = Intent(this, NotificationReceiver::class.java)
+        broadcastIntent.putExtra("toastMessage","Selamat anda sudah berhasil mengerjakan Modul 8 dan 9 ")
+        val actionIntent = PendingIntent.getBroadcast(this,0, broadcastIntent, PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+
+        val builder = NotificationCompat.Builder(this,CHANNEL_ID_1)
+            .setSmallIcon(R.drawable.ic_baseline_looks_one_24)
+            .setContentTitle("Modul89_B_10798_PROJECT2")
+            .setContentText("Selamat anda sudah berhasil mengerjakan Modul 8 dan 9 ")
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setColor(Color.BLUE)
+            .setAutoCancel(true)
+            .setOnlyAlertOnce(true)
+            .setContentIntent(pendingIntent)
+            .addAction(R.mipmap.ic_launcher_round, "Toast", actionIntent)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+
+        with(NotificationManagerCompat.from(this)){
+            notify(notificationId1, builder.build())
+        }
     }
 }
